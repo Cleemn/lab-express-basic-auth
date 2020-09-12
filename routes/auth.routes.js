@@ -15,6 +15,15 @@ router.post('/signup', (req, res, next) => {
 
     const hashedPassword = bcryptjs.hashSync(password, salt)
     console.log(`Password hash: ${hashedPassword}`);
+
+    User.create({
+        username,
+        passwordHash: hashedPassword
+      }).then(userFromDb => {
+        res.send('user créé!')
+      }).catch(err => {
+        next(err)
+      })
   });
 
 module.exports = router;
