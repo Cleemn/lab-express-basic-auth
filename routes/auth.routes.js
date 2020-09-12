@@ -13,19 +13,31 @@ router.get('/signup', (req, res, next) => {
 router.post('/signup', (req, res, next) => {
    const { username, password } = req.body;
 
-   const hashedPassword = bcryptjs.hashSync(password, salt);
-   console.log(`Password hash: ${hashedPassword}`);
-
-   User.create({
-      username,
-      passwordHash: hashedPassword,
-   })
-      .then((userFromDb) => {
-         res.send('user créé!');
+   //  console.log(`Password hash: ${hashedPassword}`);
+   //si user existe dans db, message erreur
+   User.findOne({ username })
+      .then((user) => {
+         if (user !== null) {
+            res.render('auth/signup', { errorMessage: 'user already exists' });
+            return;
+         } else if (!username || !password) {
+            res.render('auth/signup', { errorMessage: 'merci de remplir tous les champs' });
+            return;
+         }
+         //sinon créer le user
+         const hashedPassword = bcryptjs.hashSync(password, salt);
+         User.create({
+            username,
+            passwordHash: hashedPassword,
+         })
+            .then((userFromDb) => {
+               res.send('user créé!');
+            })
+            .catch((err) => {
+               next(err);
+            });
       })
-      .catch((err) => {
-         next(err);
-      });
+      .catch((err) => next(err));
 });
 
 //authentifiction
@@ -46,7 +58,7 @@ router.post('/login', (req, res, next) => {
    const { username, password } = req.body;
    //vérifier que les 2 sont remplis, sinon renvoyer le formulaire
    if (!username || !password) {
-      res.render('auth/login', { erroMessage: 'login/password wrong' });
+      res.render('auth/login', { errorMessage: 'login/password wrong' });
       return;
    }
    //si non,  comparer username avec Bd,
@@ -54,7 +66,7 @@ router.post('/login', (req, res, next) => {
       .then((user) => {
          //si username n'existe pas, message erreur +page login
          if (!user) {
-            res.render('auth/login', { erroMessage: 'login/password wrong' });
+            res.render('auth/login', { errorMessage: 'login/password wrong' });
          }
          //si ça matche (user existe), comparer les mots de passe, + view profile
          else {
@@ -63,7 +75,7 @@ router.post('/login', (req, res, next) => {
                //pour cookie
                req.session.currentUser = user;
                res.render('auth/profile', { user: user });
-            } else res.render('auth/login');
+            } else res.render('auth/login', { errorMessage: 'invalid login' });
          }
       })
       .catch((err) => next(err));
@@ -80,21 +92,21 @@ router.get('/profile', (req, res, next) => {
 // Protection de la page private => pas accessible si pas logged in
 
 router.get('/private', (req, res) => {
-  if (!req.session.currentUser) {
-    res.redirect('/login');
-    return;
-  }
+   if (!req.session.currentUser) {
+      res.redirect('/login');
+      return;
+   }
 
-  res.render('private', { user: req.session.currentUser });
+   res.render('private', { user: req.session.currentUser });
 });
 
 router.get('/main', (req, res) => {
-  if (!req.session.currentUser) {
-    res.redirect('/login');
-    return;
-  }
+   if (!req.session.currentUser) {
+      res.redirect('/login');
+      return;
+   }
 
-  res.render('main', { user: req.session.currentUser });
+   res.render('main', { user: req.session.currentUser });
 });
 
 module.exports = router;
