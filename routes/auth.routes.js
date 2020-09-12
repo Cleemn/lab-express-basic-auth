@@ -77,4 +77,24 @@ router.get('/profile', (req, res, next) => {
    });
 });
 
+// Protection de la page private => pas accessible si pas logged in
+
+router.get('/private', (req, res) => {
+  if (!req.session.currentUser) {
+    res.redirect('/login');
+    return;
+  }
+
+  res.render('private', { user: req.session.currentUser });
+});
+
+router.get('/main', (req, res) => {
+  if (!req.session.currentUser) {
+    res.redirect('/login');
+    return;
+  }
+
+  res.render('main', { user: req.session.currentUser });
+});
+
 module.exports = router;
